@@ -1,9 +1,13 @@
 async function findRootTodoNote() {
   const rootTodoNote = await api.searchForNote('#tasksRoot');
   if (!rootTodoNote) return null;
-
-
   return rootTodoNote;
+}
+
+async function findOnCreateNote() {
+  const note = await api.searchForNote('#tasksOnCreate');
+  if (!note) return null;
+  return note;
 }
 
 async function createNewNoteFolder(parentNoteId, noteTitle) {
@@ -32,6 +36,7 @@ async function setArchived(noteId) {
 
 async function setupNewTodoRoot(rootTodoNote) {
   const rootTodoNoteId = rootTodoNote.noteId;
+  const onCreateNote = await findOnCreateNote();
   const defaultStatuses = ['Backlog', 'Todo', 'In Progress', 'Done', 'Archived'];
 
   const todoVerLabel = rootTodoNote.getLabel('tasksVer');
@@ -53,6 +58,15 @@ async function setupNewTodoRoot(rootTodoNote) {
     await setNoteLabel(noteId, 'tasksTagsRoot', null);
     await setArchived(noteId);
     todoVerValue = '2';
+    await setNoteLabel(rootTodoNoteId, 'tasksVer', todoVerValue);
+  }
+
+  if (todoVerValue < 3) {
+    await api.runOnBackend((rootTodoNoteId, onCreateNoteId) => {
+        const note = api.getNote(rootTodoNoteId);
+        note.addAttribute('relation', 'runOnChildNoteCreation', onCreateNoteId, true);
+    }, [rootTodoNoteId, onCreateNote.noteId]);
+    todoVerValue = '3';
     await setNoteLabel(rootTodoNoteId, 'tasksVer', todoVerValue);
   }
 

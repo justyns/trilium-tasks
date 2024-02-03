@@ -14,6 +14,8 @@ These are some high level goals I'd like to accomplish.  Please feel free to sug
 - [ ] Custom attributes?
 - [ ] HTTP API for external applications to interact with
 - [ ] Support for syncing to external task managers - e.g. remember the milk, kanboard, taskwarrior, etc
+- [ ] Time tracking
+- [ ] Quick add supporting syntax like rtm or taskwarrior
 
 
 ## Alternatives
