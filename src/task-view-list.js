@@ -1,5 +1,7 @@
 const $tasksList = api.$container.find(".tasks-view-list");
-const statuses = ["Backlog", "Todo", "In Progress", "Done", "Archived"];
+const $addTaskButton = $("#add-task-button");
+const $newTaskInput = $("#new-task-input");
+const statuses = ["In Progress", "Todo", "Backlog", "Done"];
 
 const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
   const statusNote = await api.searchForNote(`#tasksStatus="${newStatus}"`);
@@ -70,5 +72,33 @@ const renderTaskList = async () => {
     $tasksList.append($statusHeader, $statusList);
   }
 };
+
+const createNewTask = async () => {
+  const taskTitle = $newTaskInput.val();
+  if (taskTitle) {
+    const parentNote = await api.searchForNote('#tasksStatus="Backlog"');
+    const parentNoteId = parentNote.noteId;
+    const content = "";
+    const newTask = await api.runOnBackend(
+      (parentNoteId, taskTitle, content) => {
+        return api.createTextNote(parentNoteId, taskTitle, content);
+      },
+      [parentNoteId, taskTitle, content],
+    );
+    // await moveTaskToStatus(newTask.note.noteId, "Backlog", null);
+    $newTaskInput.val("");
+    await renderTaskList();
+  } else {
+    api.showMessage("Please enter a task name");
+  }
+};
+
+$addTaskButton.on("click", createNewTask);
+// TODO: use onsubmit or something instead?
+$newTaskInput.on("keypress", function (e) {
+  if (e.which == 13) {
+    createNewTask();
+  }
+});
 
 renderTaskList();
