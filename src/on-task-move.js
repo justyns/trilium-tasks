@@ -5,26 +5,27 @@ api.runOutsideOfSync(() => {
   const note = api.originEntity.getNote();
   const parentNote = note.getParentNotes()[0];
 
-  if (!parentNote.hasLabel('tasksStatus')) return;
+  if (!parentNote.hasLabel("tasksStatus")) return;
 
-  const newNoteStatus = parentNote.getLabel('tasksStatus').value;
-  api.log("Detected move task note: " + note.noteId + " to status " + newNoteStatus);
+  const newNoteStatus = parentNote.getLabel("tasksStatus").value;
+  api.log(
+    "Detected move task note: " + note.noteId + " to status " + newNoteStatus,
+  );
   note.setRelation("taskStatus", parentNote.noteId);
 
   const cDate = new Date();
   const timestamp = cDate.toISOString();
 
   if (newNoteStatus == "In Progress") {
-    note.setLabel('taskStarted', timestamp);
+    note.setLabel("taskStarted", timestamp);
   } else if (newNoteStatus == "Done") {
-    note.setLabel('taskCompleted', timestamp);
+    note.setLabel("taskCompleted", timestamp);
   }
 
   if (newNoteStatus !== "Done" && newNoteStatus !== "Archived") {
-    const completedLabel = note.getLabel('taskCompleted');
+    const completedLabel = note.getLabel("taskCompleted");
     if (completedLabel !== null) {
-      note.removeLabel('taskCompleted');
+      note.removeLabel("taskCompleted");
     }
   }
-  
 });
