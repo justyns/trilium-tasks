@@ -30,24 +30,24 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
   isEnabled() {
     api.log("isEnabled?");
     if (!this.note) {
-      api.log("isEnabled?  No, note undefined");
+      // api.log("isEnabled?  No, note undefined");
       return false;
     }
     var aaaa = super.isEnabled();
     this.isNoteATask(this.note.noteId).then((isTask) => {
       aaaa = aaaa && isTask;
-      api.log("isEnabled? " + aaaa);
+      // api.log("isEnabled? " + aaaa);
     });
     return aaaa;
   }
 
   async isNoteATask(noteId) {
     const taskRoot = await api.searchForNote(`#${this.taskRootLabel}`);
-    // api.log("Task root: " + taskRoot);
     if (!taskRoot) return false;
     const isATask = await this.note.hasAncestor(taskRoot.noteId);
-    // api.log("isATask: " + isATask);
-    return isATask;
+    if (!isATask) return false;
+    const hasTaskStatusLabel = await this.note.hasLabel("taskStatus");
+    return hasTaskStatusLabel;
   }
 
   doRender() {
