@@ -59,11 +59,11 @@ const createTaskItem = async (task, status, index) => {
   const $taskButtons = $taskItem.find(".task-buttons");
   statusButtons[status].forEach((buttonStatus) => {
     const $button = $(
-      `<button class="btn btn-sm btn-primary" style="margin-right: 5px;">${buttonStatus}</button>`,
+      `<button class="btn btn-sm btn-primary task-button" style="margin-right: 5px;" data-task-id="${task.noteId}" data-new-status="${buttonStatus}" data-current-status="${status}">${buttonStatus}</button>`,
     );
-    $button.on("click", () =>
-      moveTaskToStatus(task.noteId, buttonStatus, status),
-    );
+    // $button.on("click", () =>
+    //   moveTaskToStatus(task.noteId, buttonStatus, status),
+    // );
     $taskButtons.append($button);
   });
 
@@ -124,6 +124,12 @@ $newTaskInput.on("keypress", function (e) {
   if (e.which == 13) {
     createNewTask();
   }
+});
+$tasksList.on("click", ".task-button", function () {
+  const taskId = $(this).data("task-id");
+  const newStatus = $(this).data("new-status");
+  const currentStatus = $(this).data("current-status");
+  moveTaskToStatus(taskId, newStatus, currentStatus);
 });
 
 renderTaskList();
