@@ -16,7 +16,16 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
     this.taskStatuses = ["Backlog", "Todo", "In Progress", "Done", "Archived"];
     this.tagsRootLabel = "tasksTagsRoot";
     this.taskRootLabel = "tasksRoot";
+    this.isTask = false;
     this.cssBlock(cssTPL);
+  }
+
+  async updateIsTask() {
+    if (this.note) {
+      this.isTask = await this.isNoteATask(this.note.noteId);
+    } else {
+      this.isTask = false;
+    }
   }
 
   get position() {
@@ -28,30 +37,31 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
   // get parentWidget() { return "note-detail-pane"; }
 
   isEnabled() {
-    api.log("isEnabled?");
-    if (!this.note) {
-      // api.log("isEnabled?  No, note undefined");
-      return false;
-    }
-    var aaaa = super.isEnabled();
-    this.isNoteATask(this.note.noteId).then((isTask) => {
-      aaaa = aaaa && isTask;
-      // api.log("isEnabled? " + aaaa);
+    const isEnabled = super.isEnabled();
+    console.log("super.isEnabled() returned:", isEnabled);
+    console.log("this.isTask is:", this.isTask);
+    console.log("this.note is:", this.note);
+    return this.updateIsTask().then(() => {
+      console.log("this.isTask is now:", this.isTask);
+      return isEnabled && this.isTask;
     });
-    return aaaa;
   }
 
   async isNoteATask(noteId) {
     const taskRoot = await api.searchForNote(`#${this.taskRootLabel}`);
+    console.log("taskRoot is:", taskRoot);
     if (!taskRoot) return false;
     const isATask = await this.note.hasAncestor(taskRoot.noteId);
+    console.log("isATask is:", isATask);
     if (!isATask) return false;
-    const hasTaskStatusLabel = await this.note.hasLabel("taskStatus");
+    const hasTaskStatusLabel = await this.note.hasRelation("taskStatus");
+    console.log("hasTaskStatusLabel is:", hasTaskStatusLabel);
     return hasTaskStatusLabel;
   }
 
   doRender() {
     // doRender seems to only get called once?   So there may be no note yet
+    console.log("doRender called with note:", this.note);
     this.$widget = $(TPL);
     this.$btns = this.$widget.find(".tasks-widget-status-btns");
     // Create buttons for each task status
@@ -75,10 +85,15 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
   }
 
   async refreshWithNote(note) {
-    if (!(await this.isNoteATask(note.noteId))) {
-      this.toggleInt(false);
-    } else {
+    console.log("refreshWithNote called with note:", note);
+    await this.updateIsTask();
+    console.log("Is this note a task? ", this.isTask);
+    if (this.isTask) {
+      console.log("Enabling widget for task note.");
       this.toggleInt(true);
+    } else {
+      console.log("Disabling widget as this is not a task note.");
+      this.toggleInt(false);
     }
   }
 
@@ -167,6 +182,12 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
   async getTagsRootNote() {
     const tagsRootNotes = await api.searchForNotes("#tasksTagsRoot");
     return tagsRootNotes.length > 0 ? tagsRootNotes[0] : null;
+  }
+
+  async entitiesReloadedEvent({ loadResults }) {
+    if (loadResults.isNoteContentReloaded(this.noteId)) {
+      this.refresh();
+    }
   }
 }
 

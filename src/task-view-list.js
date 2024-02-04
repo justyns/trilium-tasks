@@ -64,8 +64,10 @@ const createStatusList = async (status) => {
   const $statusHeader = $(`<h3>${status}</h3>`);
   const $statusList = $(`<ul class="status-list" id="${status}-list"></ul>`);
 
+  // TODO: Caching?
+  // TODO: Better sorting
   const tasks = await api.searchForNotes(
-    `note.parents.labels.tasksStatus="${status}"`,
+    `note.parents.labels.tasksStatus="${status}" orderBy note.dateModified desc`,
   );
   for (let i = 0; i < tasks.length; i++) {
     const task = tasks[i];

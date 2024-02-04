@@ -21,6 +21,7 @@ These are some high level goals I'd like to accomplish.  Please feel free to sug
 - [ ] Time tracking
 - [ ] Quick add supporting syntax like rtm or taskwarrior
 - [ ] Audit/change log to keep track of changes to each task
+- [ ] Support for multiple top-level task roots
 
 
 ## Alternatives
