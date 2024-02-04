@@ -1,41 +1,89 @@
+const cssTPL = `
+    .tasks-widget {
+        padding: 10px; 
+        border-top: 1px solid var(--main-border-color); 
+        contain: none;
+    }
+`;
+const TPL = `
+<div id="tasks-widget" class="tasks-widget">
+     <div class="tasks-widget-status-btns"></div>
+</div>`;
+
+
 class TaskControlWidget extends api.NoteContextAwareWidget {
     constructor() {
         super();
         this.taskStatuses = ['Backlog', 'Todo', 'In Progress', 'Done', 'Archived'];
         this.tagsRootLabel = 'tasksTagsRoot';
         this.taskRootLabel = 'tasksRoot';
+        this.cssBlock(cssTPL);
     }
 
     get position() { return 99; }
     get parentWidget() { return "center-pane"; }
+    // get parentWidget() { return "note-detail-pane"; }
 
     isEnabled() {
       api.log("isEnabled?");
-      return true;
-      // return super.isEnabled() && this.shouldShow();
+      if (!this.note) {
+        api.log("isEnabled?  No, note undefined");
+        return false;
+      }
+      var aaaa = super.isEnabled();
+      this.isNoteATask(this.note.noteId).then(isTask => {
+        aaaa = aaaa && isTask;
+        api.log("isEnabled? " + aaaa);
+      });
+      return aaaa;
     }
 
-    async doRender() {
-        const widgetStyles = "padding: 10px; border-top: 1px solid var(--main-border-color); contain: none;";
-        this.$widget = $(`<div style="${widgetStyles}" id="task-control-widget">`);
+    async isNoteATask(noteId) {
+      const taskRoot = await api.searchForNote(`#${this.taskRootLabel}`);
+      // api.log("Task root: " + taskRoot);
+      if (!taskRoot) return false;
+      const isATask = await this.note.hasAncestor(taskRoot.noteId);
+      // api.log("isATask: " + isATask);
+      return isATask;
+    }
+
+    doRender() {
+      // doRender seems to only get called once?   So there may be no note yet
+        this.$widget = $(TPL);
+        this.$btns = this.$widget.find('.tasks-widget-status-btns');
         // Create buttons for each task status
-        this.taskStatuses.forEach(status => {
-            const $button = $(`<button class="btn btn-sm btn-primary">${status}</button>`);
-            $button.on('click', () => this.setTaskStatus(status));
-            this.$widget.append($button);
-        });
+        // if (this.note !== undefined && this.note !== null) {
+          for (const status of this.taskStatuses) {
+              console.log(status);
+              // const currentStatus = await this.note.getRelationTarget('taskStatus').title;
+              // const isCurrentStatus = status === currentStatus;
+              const isCurrentStatus = false;
+              const $button = $(`<button id="status-${status}" class="btn btn-sm btn-primary" ${isCurrentStatus ? 'disabled' : ''}>${status}</button>`);
+              if (!isCurrentStatus) {
+                  $button.on('click', () => this.setTaskStatus(status));
+              }
+              this.$btns.append($button);
+            }
+        // }
 
         // Create button for tag selection
         const $tagButton = $(`<button class="btn btn-sm btn-primary">Tags</button>`);
         $tagButton.on('click', () => this.selectTags());
-        this.$widget.append($tagButton);
-        this.$widget.append($('</div>'));
+        this.$btns.append($tagButton);
 
         return this.$widget;
     }
 
+    async refreshWithNote(note) {
+      if (!await this.isNoteATask(note.noteId)) {
+        this.toggleInt(false);
+      } else {
+        this.toggleInt(true);
+      }
+    }
+
     async setTaskStatus(status) {
-        const activeNote = api.getActiveContextNote();
+        const activeNote = this.note;
         const statusNote = await api.searchForNote(`#tasksStatus="${status}"`);
         console.log(`Cloning ${activeNote.noteId} to ${statusNote}`);
         const oldStatusId = await this.note.getOwnedRelationValue('taskStatus');
@@ -68,6 +116,7 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
         console.log("Tag Mapping: ", tagMapping);
         console.log("Found tags: " + tagOptions);
 
+        // I should use some sort of autocomplete style thing for this, not just a csv
         const selectedTags = await api.showPromptDialog({
             title: "Select Tags",
             message: "Choose tags:",
@@ -99,19 +148,6 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
             }, [this.note.noteId, newTagIds]);
             api.showMessage(`Tags set to ${selectedTagList.join(', ')}`);
         }
-    }
-
-    async shouldShow() {
-        const activeNoteId = api.getActiveContextNote();
-        api.log("active note id: " + activeNoteId);
-        const isUnderTaskRoot = await this.isNoteUnderTaskRoot(activeNoteId);
-        return isUnderTaskRoot;
-    }
-
-    async isNoteUnderTaskRoot(noteId) {
-        const notePath = await api.getNotePath(noteId);
-        api.log("notePath: " + notePath);
-        return notePath.some(note => note.labels.includes(this.taskRootLabel));
     }
 
     async getTagsRootNote() {
