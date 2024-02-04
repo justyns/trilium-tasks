@@ -3,6 +3,9 @@ const $addTaskButton = $("#add-task-button");
 const $newTaskInput = $("#new-task-input");
 const statuses = ["In Progress", "Todo", "Backlog", "Done"];
 
+// In-memory cache for tasks
+let taskCache = {};
+
 const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
   const statusNote = await api.searchForNote(`#tasksStatus="${newStatus}"`);
   const oldStatusNote = await api.searchForNote(
@@ -17,10 +20,17 @@ const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
   );
   await api.waitUntilSynced();
   api.showMessage(`Task status set to ${newStatus}`);
+  // Invalidate cache for this note id
+  delete taskCache[taskId];
   await renderTaskList();
 };
 
 const createTaskItem = async (task, status, index) => {
+  // Check cache first
+  if (taskCache[task.noteId]) {
+    return taskCache[task.noteId];
+  }
+
   const taskLink = await api.createLink(task.noteId, { showTooltip: true });
   const taskLinkHtml = taskLink.prop("outerHTML");
   const taskMetaData = await task.getMetadata();
@@ -57,6 +67,9 @@ const createTaskItem = async (task, status, index) => {
     $taskButtons.append($button);
   });
 
+  // Cache the task item
+  taskCache[task.noteId] = $taskItem;
+
   return $taskItem;
 };
 
@@ -64,8 +77,6 @@ const createStatusList = async (status) => {
   const $statusHeader = $(`<h3>${status}</h3>`);
   const $statusList = $(`<ul class="status-list" id="${status}-list"></ul>`);
 
-  // TODO: Caching?
-  // TODO: Better sorting
   const tasks = await api.searchForNotes(
     `note.parents.labels.tasksStatus="${status}" orderBy note.dateModified desc`,
   );
@@ -100,6 +111,8 @@ const createNewTask = async () => {
       [parentNoteId, taskTitle, content],
     );
     $newTaskInput.val("");
+    // Invalidate cache
+    taskCache = {};
     await renderTaskList();
   } else {
     api.showMessage("Please enter a task name");
