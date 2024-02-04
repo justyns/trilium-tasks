@@ -12,15 +12,19 @@ api.runOutsideOfSync(() => {
   note.setRelation("taskStatus", parentNote.noteId);
 
   const cDate = new Date();
-  const curTime = cDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  const curDate = cDate.toISOString().split('T')[0];
-  const timestamp = curDate + " " + curTime;
-  
+  const timestamp = cDate.toISOString();
+
   if (newNoteStatus == "In Progress") {
     note.setLabel('taskStarted', timestamp);
   } else if (newNoteStatus == "Done") {
     note.setLabel('taskCompleted', timestamp);
   }
 
+  if (newNoteStatus !== "Done" && newNoteStatus !== "Archived") {
+    const completedLabel = note.getLabel('taskCompleted');
+    if (completedLabel !== null) {
+      note.removeLabel('taskCompleted');
+    }
+  }
   
 });
