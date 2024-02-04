@@ -1,3 +1,48 @@
+<style>
+.task-item {
+  list-style-type: none;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid var(--main-border-color);
+  border-radius: 4px;
+  background-color: var(--main-background-color);
+  display: flex;
+  align-items: center;
+}
+
+.task-item.even {
+  background-color: var(--accented-background-color);
+}
+
+.task-item .task-content {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--main-text-color);
+  margin-right: 10px;
+}
+
+.task-item .task-metadata {
+  font-size: 12px;
+  color: var(--muted-text-color);
+  margin-right: 10px;
+}
+
+.task-item .task-buttons {
+  display: flex;
+  align-items: center;
+  /* margin-top: 10px; */
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.status-list {
+  padding-left: 0;
+}
+
+.new-task {
+  margin-bottom: 20px;
+}
+</style>
 <div class="new-task form-inline">
   <input type="text" id="new-task-input" class="form-control" placeholder="Enter new task name">
   <button id="add-task-button" class="btn btn-primary">Add</button>

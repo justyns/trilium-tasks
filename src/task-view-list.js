@@ -23,10 +23,21 @@ const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
 const createTaskItem = async (task, status, index) => {
   const taskLink = await api.createLink(task.noteId, { showTooltip: true });
   const taskLinkHtml = taskLink.prop("outerHTML");
+  const taskMetaData = await task.getMetadata();
+  const dateCreated = new Date(taskMetaData.dateCreated);
+  const dateModified = new Date(taskMetaData.dateModified);
+  const formattedDateCreated = `${dateCreated.toLocaleDateString()} ${dateCreated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  const formattedDateModified = `${dateModified.toLocaleDateString()} ${dateModified.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   let $taskItem = $(
-    `<li class="${index % 2 === 0 ? "even" : "odd"}">${taskLinkHtml}</li>`,
+    `<li class="task-item ${index % 2 === 0 ? "even" : "odd"} ${status}">
+      <div class="task-content">${taskLinkHtml}</div>
+      <div class="task-metadata">
+        <div>Created: ${formattedDateCreated}</div>
+        <div>Modified: ${formattedDateModified}</div>
+      </div>
+      <div class="task-buttons"></div>
+    </li>`,
   );
-
   const statusButtons = {
     Backlog: ["Todo"],
     Todo: ["In Progress", "Backlog"],
@@ -35,14 +46,15 @@ const createTaskItem = async (task, status, index) => {
     Archived: ["Todo"],
   };
 
+  const $taskButtons = $taskItem.find(".task-buttons");
   statusButtons[status].forEach((buttonStatus) => {
     const $button = $(
-      `<button class="btn btn-sm btn-primary">${buttonStatus}</button>`,
+      `<button class="btn btn-sm btn-primary" style="margin-right: 5px;">${buttonStatus}</button>`,
     );
     $button.on("click", () =>
       moveTaskToStatus(task.noteId, buttonStatus, status),
     );
-    $taskItem.append($button);
+    $taskButtons.append($button);
   });
 
   return $taskItem;
@@ -85,7 +97,6 @@ const createNewTask = async () => {
       },
       [parentNoteId, taskTitle, content],
     );
-    // await moveTaskToStatus(newTask.note.noteId, "Backlog", null);
     $newTaskInput.val("");
     await renderTaskList();
   } else {
@@ -94,7 +105,6 @@ const createNewTask = async () => {
 };
 
 $addTaskButton.on("click", createNewTask);
-// TODO: use onsubmit or something instead?
 $newTaskInput.on("keypress", function (e) {
   if (e.which == 13) {
     createNewTask();
