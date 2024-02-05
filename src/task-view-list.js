@@ -25,6 +25,19 @@ const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
   await renderTaskList();
 };
 
+const countSubtasks = async (noteId) => {
+  const note = await api.getNote(noteId);
+  let noteContent = await note.getContent();
+
+  const checkedRegex = /<input[^>]*type="checkbox"[^>]*checked[^>]*>/g;
+  const uncheckedRegex = /<input[^>]*type="checkbox"[^>]*>/g;
+
+  const checkedCount = (noteContent.match(checkedRegex) || []).length;
+  const uncheckedCount = (noteContent.match(uncheckedRegex) || []).length - checkedCount;
+
+  return { checkedCount, uncheckedCount };
+};
+
 const createTaskItem = async (task, status, index) => {
   // Check cache first
   if (taskCache[task.noteId]) {
@@ -38,12 +51,18 @@ const createTaskItem = async (task, status, index) => {
   const dateModified = new Date(taskMetaData.dateModified);
   const formattedDateCreated = `${dateCreated.toLocaleDateString()} ${dateCreated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
   const formattedDateModified = `${dateModified.toLocaleDateString()} ${dateModified.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+
+  // Get subtask counts
+  const { checkedCount, uncheckedCount } = await countSubtasks(task.noteId);
+  const subtaskCountHtml = (checkedCount + uncheckedCount > 0) ? `<div>Subtasks: ${checkedCount}/${checkedCount + uncheckedCount}</div>` : '';
+
   let $taskItem = $(
     `<li class="task-item ${index % 2 === 0 ? "even" : "odd"} ${status}">
       <div class="task-content">${taskLinkHtml}</div>
       <div class="task-metadata">
         <div>Created: ${formattedDateCreated}</div>
         <div>Modified: ${formattedDateModified}</div>
+        ${subtaskCountHtml}
       </div>
       <div class="task-buttons"></div>
     </li>`,
