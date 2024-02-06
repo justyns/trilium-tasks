@@ -45,17 +45,64 @@ const changeTaskTags = async (taskId) => {
 
   const existingTags = await getNoteTags(taskId);
 
-  // TODO:  Can I make this either have autocomplete or be clickable?
-  const selectedTags = await api.showPromptDialog({
-    title: "Select Tags",
-    message: `Choose tags from the available list: ${tags.map((tag) => tag.title).join(", ")}`,
-    defaultValue: existingTags.join(", "),
+  // Create a new dialog for tag selection
+  const availableTags = tags.map(tag => tag.title).join(", ");
+  const $dialog = $(`
+    <div class="modal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Select Tags</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>Available tags: ${availableTags}</p>
+            <p>Please pick one or more tags.</p>
+            <input class="form-control" id="tag-autocomplete" type="text" placeholder="Start typing to search tags...">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="save-tags">Save changes</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `);
+  // Initialize autocomplete on the input field
+  // TODO: Figure out how to re-use the built-in autocomplete?
+  $dialog.find("#tag-autocomplete").autocomplete({
+    source: function(request, response) {
+      // Use the previously found tags for autocomplete
+      const autocompleteData = tags.filter(tag => tag.title.includes(request.term)).map(tag => ({
+        label: tag.title,
+        value: tag.noteId
+      }));
+
+      // Call the response function with the autocomplete data
+      response(autocompleteData);
+    },
+    select: function(event, ui) {
+      // When a tag is selected, set the value of the input field to the tag's title
+      $(this).val(ui.item.label);
+      return false;
+    }
   });
 
-  if (selectedTags) {
-    const selectedTagList = selectedTags.split(",").map((tag) => tag.trim());
+  // Set the input field to show the existing tags by default
+  $dialog.find("#tag-autocomplete").val(existingTags.join(", "));
+
+
+  // When the save button is clicked, update the tags
+  $dialog.find("#save-tags").on("click", async () => {
+    const selectedTags = $dialog
+      .find("#tag-autocomplete")
+      .val()
+      .split(",")
+      .map((tag) => tag.trim());
     var newTagIds = [];
-    selectedTagList.forEach((tag) => {
+    selectedTags.forEach((tag) => {
       const tagNoteId = tagMapping[tag];
       if (tagNoteId) {
         newTagIds.push(tagNoteId);
@@ -85,11 +132,17 @@ const changeTaskTags = async (taskId) => {
       },
       [taskId, newTagIds],
     );
-    api.showMessage(`Tags set to ${selectedTagList.join(", ")}`);
+    api.showMessage(`Tags set to ${selectedTags.join(", ")}`);
     // Invalidate cache for this note id
     delete taskCache[taskId];
     await renderTaskList();
-  }
+
+    // Close the dialog
+    $dialog.modal("hide");
+  });
+
+  // Show the dialog
+  $dialog.modal("show");
 };
 
 const countSubtasks = async (noteId) => {
