@@ -102,8 +102,10 @@ async function setupNewTodoRoot(rootTodoNote) {
 // TODO: Support multiple notes with the #todoRoot label
 // TODO: Handle migrations for new root structures
 
-var rootTodoNote = await findRootTodoNote();
-if (rootTodoNote != null) {
-  api.log("Found root todo note: " + rootTodoNote);
-  setupNewTodoRoot(rootTodoNote);
-}
+(async function() {
+  var rootTodoNote = await findRootTodoNote();
+  if (rootTodoNote != null) {
+    api.log("Found root todo note: " + rootTodoNote);
+    await setupNewTodoRoot(rootTodoNote);
+  }
+})();

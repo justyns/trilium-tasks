@@ -1,9 +1,14 @@
 {
+  "devDependencies": {
+    "parcel": "^2.0.0"
+  },
+  "scripts": {
+    "build": "parcel build --no-source-maps --detailed-report --no-content-hash src/task-*.js src/on-task-*.js src/create-todo-structure*.js src/*.html",
+    "watch": "parcel watch --no-source-maps src/task-*.js src/on-task-*.js src/create-todo-structure*.js src/*.html",
+    "upload": "python upload.py LfIj01iVsDOM dist/task-view-list.js niRxFxUa0406 dist/task-widget.js SMzHjr1XqgzH dist/create-todo-structure.js TVyECZ9v9gL7 dist/on-note-create.js 9uxsC5ebGaet dist/on-note-move.js"
+  },
   "dependencies": {
     "@types/trilium": "npm:trilium-types@^0.1.1",
     "trilium-pack": "^0.1.1"
-  },
-  "scripts": {
-    "dist": "tpack"
   }
 }
