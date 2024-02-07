@@ -5,30 +5,6 @@ console.log(api.originEntity);
 // TODO: Can I require/import a note from somewhere else instead?
 // const tasklib = require("./tasklib");
 
-const addHistoryLog = (note, message) => {
-  let noteContent = note.getContent();
-  let historyIndex = noteContent.indexOf("<h2>History</h2>");
-
-  if (historyIndex === -1) {
-    noteContent += "\n\n<h2>History</h2>\n<ul>\n";
-  } else {
-    // Find the last </ul> tag if it exists
-    let lastIndex = noteContent.lastIndexOf("</ul>");
-    if (lastIndex !== -1) {
-      // Remove the closing </ul> tag
-      noteContent = noteContent.substring(0, lastIndex);
-    }
-  }
-
-  noteContent += `<li>${message}</li>\n`;
-
-  // Always ensure the closing </ul> tag is present
-  if (!noteContent.endsWith("</ul>\n")) {
-    noteContent += "</ul>\n";
-  }
-
-  note.setContent(noteContent);
-};
 
 // withoot runOutsideOfSync, the parent note ends up being the old status not the new one
 api.runOutsideOfSync(() => {
@@ -63,5 +39,5 @@ api.runOutsideOfSync(() => {
   }
 
   historyMsg = `<strong>${timestamp}</strong>: Status ${oldNoteStatus} -> ${newNoteStatus}`;
-  addHistoryLog(note, historyMsg, { forceFrontendReload: true });
+  tasklib.addHistoryLog(note, historyMsg, { forceFrontendReload: true });
 });

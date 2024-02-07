@@ -10,25 +10,6 @@ const statuses = ["In Progress", "Todo", "Backlog", "Done"];
 // In-memory cache for tasks
 let taskCache = {};
 
-const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
-  const statusNote = await api.searchForNote(`#tasksStatus="${newStatus}"`);
-  const oldStatusNote = await api.searchForNote(
-    `#tasksStatus="${currentStatus}"`,
-  );
-  await api.runOnBackend(
-    (noteId, newStatusNoteId, oldStatusNoteId) => {
-      api.toggleNoteInParent(true, noteId, newStatusNoteId);
-      api.toggleNoteInParent(false, noteId, oldStatusNoteId);
-    },
-    [taskId, statusNote.noteId, oldStatusNote.noteId],
-  );
-  await api.waitUntilSynced();
-  api.showMessage(`Task status set to ${newStatus}`);
-  // Invalidate cache for this note id
-  delete taskCache[taskId];
-  await renderTaskList();
-};
-
 // TODO: Re-use this and the code in task-widget.js instead of duplicating
 const changeTaskTags = async (taskId) => {
   const tagsRootNotes = await api.searchForNotes("#tasksTagsRoot");
@@ -47,7 +28,7 @@ const changeTaskTags = async (taskId) => {
     tagMapping[tag.title] = tag.noteId;
   });
 
-  const existingTags = await getNoteTags(taskId);
+  const existingTags = await tasklib.getNoteTags(taskId);
 
   // Create a new dialog for tag selection
   const availableTags = tags.map((tag) => tag.title).join(", ");
@@ -150,33 +131,6 @@ const changeTaskTags = async (taskId) => {
   $dialog.modal("show");
 };
 
-const countSubtasks = async (noteId) => {
-  const note = await api.getNote(noteId);
-  let noteContent = await note.getContent();
-
-  const checkedRegex = /<input[^>]*type="checkbox"[^>]*checked[^>]*>/g;
-  const uncheckedRegex = /<input[^>]*type="checkbox"[^>]*>/g;
-
-  const checkedCount = (noteContent.match(checkedRegex) || []).length;
-  const uncheckedCount =
-    (noteContent.match(uncheckedRegex) || []).length - checkedCount;
-
-  return { checkedCount, uncheckedCount };
-};
-
-const getNoteTags = async (noteId) => {
-  const note = await api.getNote(noteId);
-  const tagIds = await note.getOwnedRelations("tag");
-  const tags = [];
-
-  for (const tag of tagIds) {
-    const tagNote = await api.getNote(tag.value);
-    tags.push(tagNote.title);
-  }
-
-  return tags;
-};
-
 const createTaskItem = async (task, status, index) => {
   // Check cache first
   if (taskCache[task.noteId]) {
@@ -192,14 +146,14 @@ const createTaskItem = async (task, status, index) => {
   const formattedDateModified = `${dateModified.toLocaleDateString()} ${dateModified.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 
   // Get subtask counts
-  const { checkedCount, uncheckedCount } = await countSubtasks(task.noteId);
+  const { checkedCount, uncheckedCount } = await tasklib.countSubtasks(task.noteId);
   const subtaskCountHtml =
     checkedCount + uncheckedCount > 0
       ? `<div>Subtasks: ${checkedCount}/${checkedCount + uncheckedCount}</div>`
       : "";
 
   // Get task tags
-  const tags = await getNoteTags(task.noteId);
+  const tags = await tasklib.getNoteTags(task.noteId);
   const tagsHtml = tags.length > 0 ? `<div>Tags: ${tags.join(", ")}</div>` : "";
 
   let $taskItem = $(
@@ -297,7 +251,8 @@ $tasksList.on("click", ".task-button", function () {
   const taskId = $(this).data("task-id");
   const newStatus = $(this).data("new-status");
   const currentStatus = $(this).data("current-status");
-  moveTaskToStatus(taskId, newStatus, currentStatus);
+  tasklib.moveTaskToStatus(taskId, newStatus, currentStatus);
+  renderTaskList();
 });
 $tasksList.on("click", ".task-button-tags", function () {
   const taskId = $(this).data("task-id");
