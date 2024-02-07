@@ -3,6 +3,10 @@ const $addTaskButton = $("#add-task-button");
 const $newTaskInput = $("#new-task-input");
 const statuses = ["In Progress", "Todo", "Backlog", "Done"];
 
+// tasklib needs to be a child note (clone)
+// TODO: Can I require/import a note from somewhere else instead?
+// const tasklib = require("./tasklib");
+
 // In-memory cache for tasks
 let taskCache = {};
 
@@ -46,7 +50,7 @@ const changeTaskTags = async (taskId) => {
   const existingTags = await getNoteTags(taskId);
 
   // Create a new dialog for tag selection
-  const availableTags = tags.map(tag => tag.title).join(", ");
+  const availableTags = tags.map((tag) => tag.title).join(", ");
   const $dialog = $(`
     <div class="modal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
@@ -73,26 +77,27 @@ const changeTaskTags = async (taskId) => {
   // Initialize autocomplete on the input field
   // TODO: Figure out how to re-use the built-in autocomplete?
   $dialog.find("#tag-autocomplete").autocomplete({
-    source: function(request, response) {
+    source: function (request, response) {
       // Use the previously found tags for autocomplete
-      const autocompleteData = tags.filter(tag => tag.title.includes(request.term)).map(tag => ({
-        label: tag.title,
-        value: tag.noteId
-      }));
+      const autocompleteData = tags
+        .filter((tag) => tag.title.includes(request.term))
+        .map((tag) => ({
+          label: tag.title,
+          value: tag.noteId,
+        }));
 
       // Call the response function with the autocomplete data
       response(autocompleteData);
     },
-    select: function(event, ui) {
+    select: function (event, ui) {
       // When a tag is selected, set the value of the input field to the tag's title
       $(this).val(ui.item.label);
       return false;
-    }
+    },
   });
 
   // Set the input field to show the existing tags by default
   $dialog.find("#tag-autocomplete").val(existingTags.join(", "));
-
 
   // When the save button is clicked, update the tags
   $dialog.find("#save-tags").on("click", async () => {

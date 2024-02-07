@@ -1,11 +1,13 @@
 {
   "devDependencies": {
+    "@babel/core": "^7.23.9",
     "parcel": "^2.0.0"
   },
   "scripts": {
     "build": "parcel build --no-source-maps --detailed-report --no-content-hash src/task-*.js src/on-task-*.js src/create-todo-structure*.js src/*.html",
     "watch": "parcel watch --no-source-maps src/task-*.js src/on-task-*.js src/create-todo-structure*.js src/*.html",
-    "upload": "python upload.py LfIj01iVsDOM dist/task-view-list.js niRxFxUa0406 dist/task-widget.js SMzHjr1XqgzH dist/create-todo-structure.js TVyECZ9v9gL7 dist/on-note-create.js 9uxsC5ebGaet dist/on-note-move.js"
+    "upload": "python upload.py LfIj01iVsDOM dist/task-view-list.js niRxFxUa0406 dist/task-widget.js SMzHjr1XqgzH dist/create-todo-structure.js TVyECZ9v9gL7 dist/on-task-create.js 9uxsC5ebGaet dist/on-task-move.js",
+    "uploadsrc": "python upload.py LfIj01iVsDOM src/task-view-list.js niRxFxUa0406 src/task-widget.js SMzHjr1XqgzH src/create-todo-structure.js TVyECZ9v9gL7 src/on-task-create.js 9uxsC5ebGaet src/on-task-move.js T4Fz0PbSjjuF src/tasklib.js"
   },
   "dependencies": {
     "@types/trilium": "npm:trilium-types@^0.1.1",

@@ -1,6 +1,10 @@
 api.log("on-task-move: " + api.originEntity);
 console.log(api.originEntity);
 
+// tasklib needs to be a child note (clone)
+// TODO: Can I require/import a note from somewhere else instead?
+// const tasklib = require("./tasklib");
+
 const addHistoryLog = (note, message) => {
   let noteContent = note.getContent();
   let historyIndex = noteContent.indexOf("<h2>History</h2>");

@@ -1,3 +1,7 @@
+// tasklib needs to be a child note (clone)
+// TODO: Can I require/import a note from somewhere else instead?
+// const tasklib = require("./tasklib");
+
 async function findRootTodoNote() {
   const rootTodoNote = await api.searchForNote("#tasksRoot");
   if (!rootTodoNote) return null;
@@ -102,7 +106,7 @@ async function setupNewTodoRoot(rootTodoNote) {
 // TODO: Support multiple notes with the #todoRoot label
 // TODO: Handle migrations for new root structures
 
-(async function() {
+(async function () {
   var rootTodoNote = await findRootTodoNote();
   if (rootTodoNote != null) {
     api.log("Found root todo note: " + rootTodoNote);

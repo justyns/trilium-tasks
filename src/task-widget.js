@@ -10,6 +10,10 @@ const TPL = `
      <div class="tasks-widget-status-btns"></div>
 </div>`;
 
+// tasklib needs to be a child note (clone)
+// TODO: Can I require/import a note from somewhere else instead?
+// const tasklib = require("./tasklib");
+
 class TaskControlWidget extends api.NoteContextAwareWidget {
   constructor() {
     super();
@@ -18,6 +22,8 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
     this.taskRootLabel = "tasksRoot";
     this.isTask = false;
     this.cssBlock(cssTPL);
+
+    console.log(`parentWidget: `, TaskControlWidget.parentWidget);
   }
 
   async updateIsTask() {
@@ -28,13 +34,13 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
     }
   }
 
-  get position() {
+  static get position() {
     return 99;
   }
-  get parentWidget() {
+
+  static get parentWidget() {
     return "center-pane";
   }
-  // get parentWidget() { return "note-detail-pane"; }
 
   isEnabled() {
     const isEnabled = super.isEnabled();
@@ -191,4 +197,4 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
   }
 }
 
-module.exports = new TaskControlWidget();
+module.exports = TaskControlWidget;
