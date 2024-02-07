@@ -5,7 +5,6 @@ console.log(api.originEntity);
 // TODO: Can I require/import a note from somewhere else instead?
 // const tasklib = require("./tasklib");
 
-
 // withoot runOutsideOfSync, the parent note ends up being the old status not the new one
 api.runOutsideOfSync(() => {
   const note = api.originEntity.getNote();

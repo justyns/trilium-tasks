@@ -7,9 +7,6 @@ const statuses = ["In Progress", "Todo", "Backlog", "Done"];
 // TODO: Can I require/import a note from somewhere else instead?
 // const tasklib = require("./tasklib");
 
-// In-memory cache for tasks
-let taskCache = {};
-
 // TODO: Re-use this and the code in task-widget.js instead of duplicating
 const changeTaskTags = async (taskId) => {
   const tagsRootNotes = await api.searchForNotes("#tasksTagsRoot");
@@ -120,7 +117,7 @@ const changeTaskTags = async (taskId) => {
     );
     api.showMessage(`Tags set to ${selectedTags.join(", ")}`);
     // Invalidate cache for this note id
-    delete taskCache[taskId];
+    tasklib.taskCache.del(taskId);
     await renderTaskList();
 
     // Close the dialog
@@ -133,8 +130,9 @@ const changeTaskTags = async (taskId) => {
 
 const createTaskItem = async (task, status, index) => {
   // Check cache first
-  if (taskCache[task.noteId]) {
-    return taskCache[task.noteId];
+  const cachedTask = tasklib.taskCache.get(task.noteId);
+  if (cachedTask) {
+    return cachedTask;
   }
 
   const taskLink = await api.createLink(task.noteId, { showTooltip: true });
@@ -146,7 +144,9 @@ const createTaskItem = async (task, status, index) => {
   const formattedDateModified = `${dateModified.toLocaleDateString()} ${dateModified.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 
   // Get subtask counts
-  const { checkedCount, uncheckedCount } = await tasklib.countSubtasks(task.noteId);
+  const { checkedCount, uncheckedCount } = await tasklib.countSubtasks(
+    task.noteId,
+  );
   const subtaskCountHtml =
     checkedCount + uncheckedCount > 0
       ? `<div>Subtasks: ${checkedCount}/${checkedCount + uncheckedCount}</div>`
@@ -190,7 +190,7 @@ const createTaskItem = async (task, status, index) => {
   $taskButtons.append($tagButton);
 
   // Cache the task item
-  taskCache[task.noteId] = $taskItem;
+  tasklib.taskCache.set(task.noteId, $taskItem, 3600);
 
   return $taskItem;
 };
@@ -233,8 +233,6 @@ const createNewTask = async () => {
       [parentNoteId, taskTitle, content],
     );
     $newTaskInput.val("");
-    // Invalidate cache
-    taskCache = {};
     await renderTaskList();
   } else {
     api.showMessage("Please enter a task name");
