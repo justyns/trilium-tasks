@@ -189,6 +189,11 @@ const createTaskItem = async (task, status, index) => {
   );
   $taskButtons.append($tagButton);
 
+  const $logButton = $(
+    `<button class="btn btn-sm btn-primary task-button-log" style="margin-right: 5px;" data-task-id="${task.noteId}">Log</button>`,
+  );
+  $taskButtons.append($logButton);
+
   // Cache the task item
   tasklib.taskCache.set(task.noteId, $taskItem, 3600);
 
@@ -255,6 +260,19 @@ $tasksList.on("click", ".task-button", function () {
 $tasksList.on("click", ".task-button-tags", function () {
   const taskId = $(this).data("task-id");
   changeTaskTags(taskId);
+});
+$tasksList.on("click", ".task-button-log", async function () {
+  const taskId = $(this).data("task-id");
+  const message = await api.showPromptDialog({
+    title: "Log Message",
+    message: "Please enter a log message",
+  });
+  if (message) {
+    await tasklib.addTaskLog(taskId, message);
+    renderTaskList();
+  } else {
+    api.showMessage("Please enter a log message");
+  }
 });
 
 renderTaskList();

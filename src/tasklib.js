@@ -25,29 +25,63 @@ const countSubtasks = async (noteId) => {
   return { checkedCount, uncheckedCount };
 };
 
-const addHistoryLog = (note, message) => {
+const addHistoryLog = (noteId, message) => {
+  // This function runs on the backend, so it can't use async/await.
+  const note = api.getNote(noteId);
   let noteContent = note.getContent();
   let historyIndex = noteContent.indexOf("<h2>History</h2>");
+  const date = new Date();
+  const timestamp = date.toISOString();
+  message = `<strong>${timestamp}</strong>: ${message}`;
 
   if (historyIndex === -1) {
     noteContent += "\n<p></p>\n<h2>History</h2>\n<ul>\n";
+    noteContent += `<li>${message}</li>\n</ul>\n`;
   } else {
-    // Find the last </ul> tag if it exists
-    let lastIndex = noteContent.lastIndexOf("</ul>");
-    if (lastIndex !== -1) {
-      // Remove the closing </ul> tag
-      noteContent = noteContent.substring(0, lastIndex);
+    // Find the last </ul> tag in the history section
+    let historyEndIndex = noteContent.indexOf("</ul>", historyIndex);
+    if (historyEndIndex !== -1) {
+      // Insert the new log entry before the closing </ul> tag in the history section
+      noteContent =
+        noteContent.substring(0, historyEndIndex) +
+        `<li>${message}</li>\n` +
+        noteContent.substring(historyEndIndex);
     }
   }
 
-  noteContent += `<li>${message}</li>\n`;
+  note.setContent(noteContent);
+};
 
-  // Always ensure the closing </ul> tag is present
-  if (!noteContent.endsWith("</ul>\n")) {
-    noteContent += "</ul>\n";
+const addTaskLog = async (noteId, message) => {
+  const note = await api.getNote(noteId);
+  let noteContent = await note.getContent();
+  let notesIndex = noteContent.indexOf("<h2>Notes</h2>");
+  const date = new Date();
+  const timestamp = date.toISOString();
+  message = `<strong>${timestamp}</strong>: ${message}`;
+
+  if (notesIndex === -1) {
+    noteContent += "\n<p></p>\n<h2>Notes</h2>\n<ul>\n";
+    noteContent += `<li>${message}</li>\n</ul>\n`;
+  } else {
+    // Find the last </ul> tag in the notes section
+    let notesEndIndex = noteContent.indexOf("</ul>", notesIndex);
+    if (notesEndIndex !== -1) {
+      // Insert the new log entry before the closing </ul> tag in the notes section
+      noteContent =
+        noteContent.substring(0, notesEndIndex) +
+        `<li>${message}</li>\n` +
+        noteContent.substring(notesEndIndex);
+    }
   }
 
-  note.setContent(noteContent);
+  await api.runOnBackend(
+    (noteId, noteContent) => {
+      const note = api.getNote(noteId);
+      note.setContent(noteContent);
+    },
+    [noteId, noteContent],
+  );
 };
 
 const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
@@ -92,7 +126,7 @@ class TaskCache {
   set(key, value, ttl) {
     const now = new Date().getTime();
     // Turn ttl into seconds
-    const expireAt = now + (ttl * 1000);
+    const expireAt = now + ttl * 1000;
 
     // Store value along with expiration time
     const item = { value, expireAt };
@@ -100,7 +134,7 @@ class TaskCache {
 
     // Also update Local Storage
     localStorage.setItem(key, JSON.stringify(item));
-    console.log("Stored in cache with TTL:", key);
+    // console.log("Stored in cache with TTL:", key);
   }
 
   // Retrieves an item from the cache, considering its TTL
@@ -109,7 +143,7 @@ class TaskCache {
     const now = new Date().getTime();
 
     if (item && now < item.expireAt) {
-      console.log("Retrieved from memory cache:", key);
+      // console.log("Retrieved from memory cache:", key);
       return item.value;
     }
 
@@ -120,7 +154,7 @@ class TaskCache {
     if (storedItem) {
       const parsedItem = JSON.parse(storedItem);
       if (now < parsedItem.expireAt) {
-        console.log("Retrieved from Local Storage:", key);
+        // console.log("Retrieved from Local Storage:", key);
         return parsedItem.value;
       } else {
         // Expired in Local Storage, remove it
@@ -141,4 +175,5 @@ module.exports = {
   addHistoryLog,
   moveTaskToStatus,
   taskCache,
+  addTaskLog,
 };
