@@ -2,6 +2,10 @@
 
 This add-on script for [Trilium](https://github.com/zadam/trilium) is meant to provide an interface for managing todos and tasks.  It is based loosely on the Task Manager provided in the Trilium Demo, but aims to be more flexible.
 
+## Work In Progress
+
+These scripts sort of work, but are definitely still a work in progress.   I'm taking a break from working on it for a while, but figured I would upload them in case it helps anyone else with similar goals.
+
 
 ## Roadmap and features
 
