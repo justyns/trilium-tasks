@@ -104,24 +104,10 @@ class TaskControlWidget extends api.NoteContextAwareWidget {
   }
 
   async setTaskStatus(status) {
-    const activeNote = this.note;
-    const statusNote = await api.searchForNote(`#tasksStatus="${status}"`);
-    console.log(`Cloning ${activeNote.noteId} to ${statusNote}`);
-    const oldStatusId = await this.note.getOwnedRelationValue("taskStatus");
-    console.log(`Old status: ${oldStatusId}`);
-    // note.setRelation("taskStatus", parentNote.noteId);
-    // await api.setAttribute(noteId, 'taskStatus', status);
-    await api.runOnBackend(
-      (noteId, newStatusNoteId, oldStatusId) => {
-        // note.cloneTo(newStatusNoteId);
-        // Not sure if cloneTo does something different, but we'd need to delete the old branch anyway
-        api.toggleNoteInParent(true, noteId, newStatusNoteId);
-        api.toggleNoteInParent(false, noteId, oldStatusId);
-      },
-      [activeNote.noteId, statusNote.noteId, oldStatusId],
-    );
+    const oldStatus = await this.note.getRelationTarget("taskStatus");
+    console.log("Moving note from status", oldStatus.title, "to status", status);
+    tasklib.moveTaskToStatus(this.note.noteId, status, oldStatus.title);
     await api.waitUntilSynced();
-    api.showMessage(`Task status set to ${status}`);
   }
 
   async selectTags() {

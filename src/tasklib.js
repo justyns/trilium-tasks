@@ -86,21 +86,88 @@ const addTaskLog = async (noteId, message) => {
 
 const moveTaskToStatus = async (taskId, newStatus, currentStatus) => {
   const statusNote = await api.searchForNote(`#tasksStatus="${newStatus}"`);
+  let oldStatusNote;
+  
+  if (currentStatus === "Archived") {
+    const taskNote = await api.getNote(taskId);
+    oldStatusNote = taskNote.getParentNotes()[0]; // This will get the month note which is the direct parent of the task
+  } else {
+    oldStatusNote = await api.searchForNote(`#tasksStatus="${currentStatus}"`);
+  }
+  console.log("old status", oldStatusNote, "new status", newStatus, "current status", currentStatus);
+
+  if (newStatus === "Archived") {
+    await archiveTask(taskId, currentStatus);
+  } else {
+    await api.runOnBackend(
+      (noteId, newStatusNoteId, oldStatusNoteId) => {
+        api.toggleNoteInParent(true, noteId, newStatusNoteId);
+        api.toggleNoteInParent(false, noteId, oldStatusNoteId);
+      },
+      [taskId, statusNote.noteId, oldStatusNote.noteId],
+    );
+    await api.waitUntilSynced();
+    api.showMessage(`Task status set to ${newStatus}`);
+  }
+  taskCache.del(taskId);
+};
+
+const archiveTask = async (taskId, currentStatus) => {
+  const archiveNote = await api.searchForNote(`#tasksStatus="Archived"`);
   const oldStatusNote = await api.searchForNote(
     `#tasksStatus="${currentStatus}"`,
   );
+
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  // Check if the year folder exists under the archive note
+  let yearNote = await api.searchForNote(`#archiveYear="${year}"`, archiveNote.noteId);
+  if (!yearNote) {
+    // If the year folder doesn't exist, create it
+    yearNote = await api.runOnBackend(
+      (parentNoteId, title) => {
+        const note = api.createTextNote(parentNoteId, title, "");
+        note.note.setLabel("archiveYear", title);
+        return note.note.noteId;
+      },
+      [archiveNote.noteId, year.toString()],
+    );
+  } else {
+    yearNote = yearNote.noteId;
+  }
+
+  // Check if the month folder exists under the year note
+  let monthNote = await api.searchForNote(`#archiveMonth="${month}"`, yearNote);
+  if (!monthNote) {
+    // If the month folder doesn't exist, create it
+    monthNote = await api.runOnBackend(
+      (parentNoteId, title) => {
+        const note = api.createTextNote(parentNoteId, title, "");
+        note.note.setLabel("archiveMonth", title);
+        return note.note.noteId;
+      },
+      [yearNote, month.toString()],
+    );
+  } else {
+    monthNote = monthNote.noteId;
+  }
+
+  // Move the task to the month folder
   await api.runOnBackend(
     (noteId, newStatusNoteId, oldStatusNoteId) => {
       api.toggleNoteInParent(true, noteId, newStatusNoteId);
       api.toggleNoteInParent(false, noteId, oldStatusNoteId);
     },
-    [taskId, statusNote.noteId, oldStatusNote.noteId],
+    [taskId, monthNote, oldStatusNote.noteId],
   );
   await api.waitUntilSynced();
-  api.showMessage(`Task status set to ${newStatus}`);
+  api.showMessage(`Task archived to ${year}/${month}`);
   // Invalidate cache for this note id
-  delete taskCache.del(taskId);
+  taskCache.del(taskId);
 };
+
 
 class TaskCache {
   constructor() {

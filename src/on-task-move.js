@@ -38,9 +38,15 @@ api.runOutsideOfSync(() => {
   const note = api.originEntity.getNote();
   const parentNote = note.getParentNotes()[0];
 
-  if (!parentNote.hasLabel("tasksStatus")) return;
+  let newNoteStatus;
+  if (parentNote.hasLabel("tasksStatus")) {
+    newNoteStatus = parentNote.getLabel("tasksStatus").value;
+  } else {
+    // If the parent note doesn't have a tasksStatus label, it's being archived
+    // TODO: Probably not always true
+    newNoteStatus = "Archived";
+  }
 
-  const newNoteStatus = parentNote.getLabel("tasksStatus").value;
   const oldNoteStatus = note
     .getOwnedRelation("taskStatus")
     .getTargetNote().title;
@@ -65,7 +71,6 @@ api.runOutsideOfSync(() => {
     }
   }
 
-  historyMsg = `Status ${oldNoteStatus} -> ${newNoteStatus}`;
-  // TODO: this is broke
+  const historyMsg = `Status ${oldNoteStatus} -> ${newNoteStatus}`;
   addHistoryLog(note.noteId, historyMsg);
 });
